@@ -1,0 +1,137 @@
+================================================================================
+DESIGN PATTERNS ANALYSIS REPORT: SPORTS PLAYER PROP TRACKER
+================================================================================
+Project Overview:
+This software system is designed to track sports player statistics and provide 
+projections for player performance using SOLID principles and Object-Oriented 
+Programming. It utilizes a combination of Creational, Structural, and 
+Behavioral design patterns.
+
+--------------------------------------------------------------------------------
+SUMMARY OF PATTERNS USED
+--------------------------------------------------------------------------------
+1. FACTORY METHOD (Creational)
+2. ADAPTER (Structural)
+3. STRATEGY (Behavioral)
+
+================================================================================
+1. FACTORY METHOD (Creational Pattern)
+================================================================================
+
+What problem does the pattern solve?
+------------------------------------
+In a data-driven application, hardcoding the creation of data-fetching classes 
+makes the system rigid. If the application needs to switch from a "Mock" 
+data source to a "Real API" or a "CSV file," modifying the core logic every 
+time violates the Open/Closed Principle.
+
+What is the basic idea behind the pattern?
+------------------------------------------
+The Factory Method defines an interface for creating an object but lets 
+subclasses or a static method decide which class to instantiate. it encapsulates 
+the "new" keyword logic.
+
+How does the pattern work in our implementation?
+------------------------------------------------
+We implemented the `StatProviderFactory` class. It contains a static method 
+`get_provider(source_type)`. Depending on the string input ("mock" or "nba"), 
+it returns an instance of `MockProvider` or `NBAApiProvider`. The rest of the 
+application only knows that it has received a `StatProvider` object.
+
+Main Advantages:
+----------------
+- Loose Coupling: The application doesn't need to know the specific class names 
+  of the providers.
+- Scalability: Adding a new sport (e.g., NFL) only requires adding a new class 
+  and updating the factory dictionary.
+
+Disadvantages/Limitations:
+--------------------------
+- Complexity: It introduces more classes into the system.
+- Parallel Hierarchies: For every new provider, you might end up creating 
+  additional factory logic or subclasses.
+
+================================================================================
+2. ADAPTER (Structural Pattern)
+================================================================================
+
+What problem does the pattern solve?
+------------------------------------
+Third-party APIs (like `nba_api`) return data in specific formats (nested JSON, 
+DataFrames) that may not align with our internal data requirements. We do not 
+want the "messy" structure of an external API to pollute our clean 
+business logic.
+
+What is the basic idea behind the pattern?
+------------------------------------------
+The Adapter acts as a wrapper that converts the interface of one class into 
+another interface that the client expects. It makes incompatible interfaces 
+work together.
+
+How does the pattern work in our implementation?
+------------------------------------------------
+We created `NBAApiAdapter`. It takes the raw dictionary output from the NBA API 
+and maps the specific keys (like 'PTS' and 'full_name') into our standard 
+`PlayerProfile` dataclass. This ensures that the Analysis portion of the code 
+always receives the same object type regardless of the source.
+
+Main Advantages:
+----------------
+- Single Responsibility: The logic for parsing external data is isolated.
+- Reusability: You can use existing classes even if their interfaces don't 
+  match the rest of your system.
+
+Disadvantages/Limitations:
+--------------------------
+- Indirection: It adds another layer of code to maintain.
+- Overhead: In extremely high-performance systems, the conversion process 
+  could introduce a negligible amount of latency.
+
+================================================================================
+3. STRATEGY (Behavioral Pattern)
+================================================================================
+
+What problem does the pattern solve?
+------------------------------------
+There are many different ways to calculate a player's performance projection 
+(mean, weighted average, recent trends). Without this pattern, the system 
+would be filled with complex `if-else` or `switch` statements, making it 
+difficult to maintain or test individual algorithms.
+
+What is the basic idea behind the pattern?
+------------------------------------------
+The Strategy pattern defines a family of algorithms, encapsulates each one, 
+and makes them interchangeable. This allows the algorithm to vary 
+independently from the clients that use it.
+
+How does the pattern work in our implementation?
+------------------------------------------------
+We defined a `PredictionStrategy` interface. We then created concrete classes: 
+`SeasonAverageStrategy`, `RecentTrendStrategy`, and `WeightedRecentStrategy`. 
+The `run_analysis` function can loop through these strategies and apply them 
+to the same `PlayerProfile` without knowing how the math works inside each.
+
+Main Advantages:
+----------------
+- Clean Code: It replaces conditional logic with polymorphism.
+- Testability: Each calculation model can be unit-tested in isolation.
+
+Disadvantages/Limitations:
+--------------------------
+- Increased Object Count: Every different algorithm requires its own class.
+- Client Awareness: The user or the main program must know that different 
+  strategies exist to choose between them.
+
+================================================================================
+SOLID COMPLIANCE SUMMARY
+================================================================================
+- Single Responsibility (S): Data fetching, data converting, and math 
+  calculations are in separate files.
+- Open/Closed (O): New providers and strategies can be added without 
+  changing main.py.
+- Liskov Substitution (L): Any class implementing the StatProvider interface 
+  can be used by the Factory.
+- Interface Segregation (I): Interfaces are small and specific.
+- Dependency Inversion (D): High-level analysis depends on Abstract Base 
+  Classes, not concrete details.
+================================================================================
