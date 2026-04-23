@@ -1,31 +1,26 @@
 from providers import StatProviderFactory
-from adapters import MockDataAdapter
+from adapters import MockDataAdapter, NBAApiAdapter
 from strategies import SeasonAverageStrategy, RecentTrendStrategy, WeightedRecentStrategy
 
 def run_analysis(player_name: str, source: str):
-    # 1. CREATIONAL: Use Factory to get a provider
-    factory = StatProviderFactory()
-    provider = factory.get_provider(source)
+    provider = StatProviderFactory.get_provider(source)
     
-    # 2. DATA FETCHING: Get the messy raw data
+    if source == "nba":
+        adapter = NBAApiAdapter()
+    else:
+        adapter = MockDataAdapter()
+    
     raw_data = provider.fetch_raw_stats(player_name)
-    
-    # 3. STRUCTURAL: Use Adapter to clean the data
-    adapter = MockDataAdapter()
     profile = adapter.standardize_data(raw_data)
     
-    # 4. BEHAVIORAL: Apply different Strategies
+    # ADD THIS PART BACK IN:
     strategies = [
         SeasonAverageStrategy(),
         RecentTrendStrategy(),
         WeightedRecentStrategy()
     ]
     
-    print(f"--- Analysis for {profile.name} ---")
-    print(f"Season Avg: {profile.season_avg}")
-    print(f"Recent Games: {profile.points_history}")
-    print("-" * 30)
-    
+    print(f"\n--- Results for {profile.name} ---")
     for strategy in strategies:
         projection = strategy.calculate_projection(profile)
         print(f"{strategy.__class__.__name__}: {projection}")
@@ -41,7 +36,7 @@ def main():
             
         try:
             # We still use our Factory and Strategy patterns exactly the same way!
-            run_analysis(player_query, "mock")
+            run_analysis(player_query, "nba")
         except Exception as e:
             print(f"Error: {e}")
 

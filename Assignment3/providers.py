@@ -1,47 +1,52 @@
+from nba_api.stats.endpoints import playergamelog
+from nba_api.stats.static import players
 from interfaces import StatProvider
-from typing import Dict
 
 class MockProvider(StatProvider):
-    """Returns fake data based on the player name provided."""
+    """Provides static mock player statistics for offline testing."""
     def fetch_raw_stats(self, player_name: str) -> dict:
-        # A simple dictionary acting as our 'database'
-        database = {
-            "LeBron James": {"last_5": [22, 18, 35, 12, 28], "avg": 24.5},
-            "Luka Doncic": {"last_5": [32, 40, 28, 35, 33], "avg": 33.9},
-            "Stephen Curry": {"last_5": [25, 30, 15, 42, 22], "avg": 26.4},
-            "Kevin Durant": {"last_5": [28, 26, 30, 32, 24], "avg": 27.1}
+        return {
+            "full_name": player_name or "Unknown Player",
+            "stats": {
+                "last_5_games": [12, 15, 14, 20, 18],
+                "avg_points": 15.8
+            },
+            "status": "mocked"
         }
 
-        player_data = database.get(player_name)
+class NBAApiProvider(StatProvider):
+    """Fetches real-time data from the official NBA API."""
+    def fetch_raw_stats(self, player_name: str) -> dict:
+        # Search for the player by name to get their ID
+        search_results = players.find_players_by_full_name(player_name)
+        if not search_results:
+            raise ValueError(f"Player '{player_name}' not found in NBA database.")
         
-        if not player_data:
-            # Fallback if player isn't in our mock list
-            return {
-                "full_name": player_name,
-                "stats": {"last_5": [0, 0, 0, 0, 0], "avg": 0.0},
-                "status": "Unknown"
-            }
-
+        player_id = search_results[0]['id']
+        
+        # Fetch the game log for the current season
+        log = playergamelog.PlayerGameLog(player_id=player_id)
+        df = log.get_data_frames()[0]
+        
+        # We return a dictionary that includes the last 5 games' points
+        # and the total season average calculated from the dataframe.
         return {
-            "full_name": player_name,
-            "stats": {
-                "last_5": player_data["last_5"],
-                "avg_points": player_data["avg"]
-            },
-            "status": "Active"
+            "full_name": search_results[0]['full_name'],
+            "points_list": df['PTS'].head(5).tolist(),
+            "season_avg": df['PTS'].mean(),
+            "source": "Official NBA API"
         }
 
 class StatProviderFactory:
-    """The Factory: Decides which provider to give the user."""
     @staticmethod
     def get_provider(source_type: str) -> StatProvider:
         providers = {
             "mock": MockProvider,
-            # "nba": NBAApiProvider  <-- You would add this later
+            "nba": NBAApiProvider
         }
-        
-        provider_class = providers.get(source_type.lower())
-        if not provider_class:
-            raise ValueError(f"Provider {source_type} not supported.")
-        
-        return provider_class()
+        try:
+            provider_cls = providers[source_type.lower()]
+        except KeyError:
+            raise ValueError(f"Unknown provider source: {source_type}")
+
+        return provider_cls()
