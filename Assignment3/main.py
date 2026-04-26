@@ -12,8 +12,7 @@ def run_analysis(player_name: str, source: str):
     
     raw_data = provider.fetch_raw_stats(player_name)
     profile = adapter.standardize_data(raw_data)
-    
-    # ADD THIS PART BACK IN:
+   
     strategies = [
         SeasonAverageStrategy(),
         RecentTrendStrategy(),
@@ -35,7 +34,7 @@ def main():
             break
             
         try:
-            # We still use our Factory and Strategy patterns exactly the same way!
+            
             run_analysis(player_query, "nba")
         except Exception as e:
             print(f"Error: {e}")

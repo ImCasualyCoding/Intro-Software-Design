@@ -27,9 +27,7 @@ class NBAApiProvider(StatProvider):
         # Fetch the game log for the current season
         log = playergamelog.PlayerGameLog(player_id=player_id)
         df = log.get_data_frames()[0]
-        
-        # We return a dictionary that includes the last 5 games' points
-        # and the total season average calculated from the dataframe.
+
         return {
             "full_name": search_results[0]['full_name'],
             "points_list": df['PTS'].head(5).tolist(),

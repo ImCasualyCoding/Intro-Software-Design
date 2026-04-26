@@ -7,4 +7,4 @@ class PlayerProfile:
     name: str
     points_history: List[float]
     season_avg: float
-    metadata: Dict = field(default_factory=dict)  # For extra info like Team or Position
+    metadata: Dict = field(default_factory=dict)  
